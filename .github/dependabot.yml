@@ -1,0 +1,19 @@
+version: 2
+updates:
+  - package-ecosystem: "terraform"
+    directory: /
+    schedule:
+      interval: "daily"
+    open-pull-requests-limit: 5
+    commit-message:
+      prefix: "chore"
+      include: scope
+    labels:
+      - "terraform"
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "daily"
+    commit-message:
+      prefix: "chore"
+      include: scope

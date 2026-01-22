@@ -1,0 +1,77 @@
+{
+  "name": "Terraform Development Environment",
+  "image": "mcr.microsoft.com/devcontainers/base:ubuntu-22.04",
+
+  "features": {
+    "ghcr.io/devcontainers/features/kubectl-helm-minikube:1": {
+      "version": "latest",
+      "helm": "latest",
+      "minikube": "none"
+    },
+    "ghcr.io/devcontainers/features/node:1": {
+      "version": "lts"
+    },
+    "ghcr.io/devcontainers/features/github-cli:1": {},
+    "ghcr.io/devcontainers/features/git:1": {},
+    "ghcr.io/devcontainers/features/python:1": {
+      "version": "os-provided",
+      "installTools": "true"
+    }
+  },
+
+  "mounts": [
+    "source=${localEnv:HOME}${localEnv:USERPROFILE}/.gitconfig,target=/home/vscode/.gitconfig,type=bind,consistency=cached",
+    "source=${localEnv:HOME}${localEnv:USERPROFILE}/.ssh,target=/home/vscode/.ssh,type=bind,consistency=cached",
+    "source=${localEnv:HOME}${localEnv:USERPROFILE}/.aws,target=/home/vscode/.aws,type=bind,consistency=cached",
+    "source=${localEnv:HOME}${localEnv:USERPROFILE}/.kube,target=/home/vscode/.kube,type=bind,consistency=cached"
+  ],
+
+  "postCreateCommand": "bash .devcontainer/setup.sh",
+
+  "customizations": {
+    "vscode": {
+      "settings": {
+        "terminal.integrated.defaultProfile.linux": "bash",
+        "terminal.integrated.copyOnSelection": true,
+        "terminal.integrated.rightClickBehavior": "paste",
+        "editor.formatOnSave": true,
+        "editor.tabSize": 2,
+        "files.trimTrailingWhitespace": true,
+        "files.insertFinalNewline": true,
+        "[terraform]": {
+          "editor.defaultFormatter": "hashicorp.terraform",
+          "editor.formatOnSave": true
+        },
+        "[terraform-vars]": {
+          "editor.defaultFormatter": "hashicorp.terraform",
+          "editor.formatOnSave": true
+        },
+        "terraform.experimentalFeatures.validateOnSave": true,
+        "files.associations": {
+          "*.tf": "terraform",
+          "*.tfvars": "terraform-vars",
+          "*.hcl": "terraform"
+        }
+      },
+      "extensions": [
+        "editorconfig.editorconfig",
+        "esbenp.prettier-vscode",
+        "eamodio.gitlens",
+        "streetsidesoftware.code-spell-checker",
+        "4ops.terraform",
+        "hashicorp.terraform",
+        "shardulm94.trailing-spaces",
+        "raunofreiberg.vesper",
+        "miguelsolorio.symbols"
+      ]
+    }
+  },
+
+  "containerEnv": {
+    "AWS_ACCESS_KEY_ID": "${localEnv:AWS_ACCESS_KEY_ID}",
+    "AWS_SECRET_ACCESS_KEY": "${localEnv:AWS_SECRET_ACCESS_KEY}",
+    "AWS_REGION": "${localEnv:AWS_REGION:ap-southeast-1}"
+  },
+
+  "remoteUser": "vscode"
+}
