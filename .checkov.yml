@@ -12,3 +12,29 @@ skip-check:
   - CKV_AWS_144       # Cross-region replication - expensive, not needed for all buckets
   - CKV_AWS_145       # KMS encryption - AES256 is sufficient for many use cases
   - CKV_AWS_300       # Abort incomplete multipart - optional, already supported via variable
+
+  # ALB Health Check Demo - Justified for demo/development use
+  - CKV_AWS_2         # ALB HTTPS listener - demo uses HTTP for simplicity, no certificate required
+  - CKV_AWS_91        # ALB access logging - would require additional S3 bucket for demo
+  - CKV_AWS_103       # ALB TLS 1.2 - not applicable, demo uses HTTP
+  - CKV_AWS_131       # ALB HTTPS redirect - demo uses HTTP only
+  - CKV_AWS_150       # ALB deletion protection - disabled for easy cleanup of demo resources
+  - CKV2_AWS_28       # ALB WAF association - not required for internal demo
+
+  # EC2 Demo Instances
+  - CKV_AWS_88        # EC2 public IP - required for demo instances to be accessible via ALB
+  - CKV_AWS_79        # EC2 metadata IMDSv2 - already enforced in ec2.tf, skip false positive
+
+  # Lambda Auto-Shutdown
+  - CKV_AWS_50        # Lambda X-Ray tracing - not needed for simple shutdown function
+  - CKV_AWS_116       # Lambda DLQ - not critical for auto-shutdown, failures are acceptable
+  - CKV_AWS_117       # Lambda VPC - not needed, only calls EC2 API
+  - CKV_AWS_173       # Lambda env var encryption - instance IDs are not sensitive
+  - CKV_AWS_272       # Lambda code signing - not required for demo
+
+  # CloudWatch Logs
+  - CKV_AWS_338       # CloudWatch log retention - short retention acceptable for demo logs
+
+  # IAM
+  - CKV_AWS_355       # IAM wildcard resource - Lambda needs to stop instances by tag, not specific ARN
+  - CKV_AWS_290       # IAM wildcard resource - same as above

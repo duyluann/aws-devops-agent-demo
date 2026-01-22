@@ -30,8 +30,7 @@
 #   )
 # }
 
-# Get current AWS account ID for unique bucket naming
-data "aws_caller_identity" "current" {}
+# AWS account ID is available via data.aws_caller_identity.current in data.tf
 
 # Example: Create multiple resources using the same module
 # module "logs_bucket" {

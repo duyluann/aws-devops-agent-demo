@@ -1,41 +1,24 @@
 # Production Environment Configuration
-# Best practice: High availability, security, and monitoring enabled
+# Full features enabled, no auto-shutdown
 
 env    = "prod"
-region = "ap-southeast-1" # Southeast Asia (Singapore)
-prefix = "myapp"
+region = "ap-southeast-1"
+prefix = "devops-demo"
 
-# Production-specific settings (examples)
-# Enable all critical features for production workloads
+# Network
+vpc_cidr = "10.2.0.0/16"
 
-# Example: Enable/disable features per environment
-# enable_monitoring       = true
-# enable_backup          = true
-# enable_encryption      = true
-# enable_deletion_protection = true
+# EC2 Instances - same size for demo consistency
+instance_type  = "t3.micro"
+instance_count = 2
 
-# Example: Instance sizing for production (HA configuration)
-# instance_type  = "t3.medium"
-# instance_count = 3  # For high availability
+# SSH Access - disabled by default for security
+enable_ssh_access = false
+ssh_allowed_cidrs = []
+key_pair_name     = ""
 
-# Example: Database configuration
-# db_instance_class      = "db.r6g.large"
-# db_allocated_storage   = 100
-# db_multi_az            = true   # High availability
-# db_backup_retention    = 30     # 30 days retention
+# Monitoring - enabled for production visibility
+enable_monitoring = true
 
-# Example: Network configuration
-# vpc_cidr             = "10.2.0.0/16"
-# availability_zones   = ["ap-southeast-1a", "ap-southeast-1b", "ap-southeast-1c"]
-# enable_nat_gateway   = true
-# single_nat_gateway   = false  # NAT Gateway per AZ for HA
-
-# Best practices for production environment:
-# 1. Enable multi-AZ for high availability
-# 2. Use appropriate instance sizing for workload
-# 3. Enable comprehensive monitoring and alerting
-# 4. Implement automated backups with long retention
-# 5. Enable deletion protection on critical resources
-# 6. Use encryption for data at rest and in transit
-# 7. Implement proper tagging for cost allocation
-# 8. Enable detailed CloudWatch logs and metrics
+# Auto-shutdown - DISABLED for production (instances stay running)
+enable_auto_shutdown = false
