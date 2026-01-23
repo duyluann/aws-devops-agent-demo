@@ -30,7 +30,7 @@ import time
 from datetime import datetime
 
 # Health status control (shared state)
-health_status = {"healthy": True, "reason": "OK"}
+health_status = {"healthy": True, "reason": "OK", "last_updated": datetime.now().isoformat()}
 
 class WebHandler(BaseHTTPRequestHandler):
     def log_message(self, format, *args):
@@ -43,17 +43,389 @@ class WebHandler(BaseHTTPRequestHandler):
     def send_json_response(self, status_code, data):
         self.send_response(status_code)
         self.send_header('Content-Type', 'application/json')
+        self.send_header('Access-Control-Allow-Origin', '*')
         self.end_headers()
         self.wfile.write(json.dumps(data).encode())
 
+    def send_html_response(self, html_content):
+        self.send_response(200)
+        self.send_header('Content-Type', 'text/html; charset=utf-8')
+        self.end_headers()
+        self.wfile.write(html_content.encode())
+
+    def get_dashboard_html(self):
+        instance_id = os.environ.get('INSTANCE_ID', 'unknown')
+        environment = os.environ.get('ENVIRONMENT', 'unknown')
+        status_class = 'healthy' if health_status["healthy"] else 'unhealthy'
+        status_icon = '✓' if health_status["healthy"] else '✗'
+
+        return f'''<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AWS ALB Health Check Demo</title>
+    <style>
+        * {{
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }}
+        body {{
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+            color: #333;
+        }}
+        .container {{
+            max-width: 1200px;
+            margin: 0 auto;
+        }}
+        .header {{
+            text-align: center;
+            color: white;
+            margin-bottom: 40px;
+        }}
+        .header h1 {{
+            font-size: 2.5rem;
+            font-weight: 700;
+            margin-bottom: 10px;
+        }}
+        .header p {{
+            font-size: 1.1rem;
+            opacity: 0.9;
+        }}
+        .card {{
+            background: white;
+            border-radius: 12px;
+            padding: 30px;
+            margin-bottom: 20px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+        }}
+        .status-card {{
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            margin-bottom: 20px;
+        }}
+        .status-item {{
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            padding: 25px;
+            border-radius: 12px;
+            color: white;
+        }}
+        .status-item h3 {{
+            font-size: 0.9rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            opacity: 0.9;
+            margin-bottom: 10px;
+        }}
+        .status-item .value {{
+            font-size: 1.5rem;
+            font-weight: 700;
+        }}
+        .health-status {{
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 25px;
+            border-radius: 12px;
+            margin-bottom: 30px;
+            font-size: 1.2rem;
+            font-weight: 600;
+        }}
+        .health-status.healthy {{
+            background: #10b981;
+            color: white;
+        }}
+        .health-status.unhealthy {{
+            background: #ef4444;
+            color: white;
+        }}
+        .health-status .icon {{
+            font-size: 2rem;
+            width: 50px;
+            height: 50px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 50%;
+        }}
+        .section-title {{
+            font-size: 1.5rem;
+            margin-bottom: 20px;
+            color: #1f2937;
+            font-weight: 700;
+        }}
+        .incident-controls {{
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 15px;
+            margin-bottom: 30px;
+        }}
+        .btn {{
+            padding: 15px 25px;
+            border: none;
+            border-radius: 8px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+        }}
+        .btn:hover {{
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+        }}
+        .btn:active {{
+            transform: translateY(0);
+        }}
+        .btn-danger {{
+            background: #ef4444;
+            color: white;
+        }}
+        .btn-danger:hover {{
+            background: #dc2626;
+        }}
+        .btn-warning {{
+            background: #f59e0b;
+            color: white;
+        }}
+        .btn-warning:hover {{
+            background: #d97706;
+        }}
+        .btn-success {{
+            background: #10b981;
+            color: white;
+        }}
+        .btn-success:hover {{
+            background: #059669;
+        }}
+        .api-section {{
+            margin-top: 30px;
+        }}
+        .endpoint {{
+            background: #f9fafb;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 10px;
+            font-family: 'Courier New', monospace;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }}
+        .endpoint code {{
+            color: #667eea;
+            font-weight: 600;
+        }}
+        .method {{
+            background: #667eea;
+            color: white;
+            padding: 4px 12px;
+            border-radius: 4px;
+            font-size: 0.85rem;
+            font-weight: 600;
+        }}
+        .footer {{
+            text-align: center;
+            color: white;
+            margin-top: 40px;
+            opacity: 0.8;
+            font-size: 0.9rem;
+        }}
+        #message {{
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            display: none;
+            font-weight: 500;
+        }}
+        #message.success {{
+            background: #d1fae5;
+            color: #065f46;
+            border: 1px solid #10b981;
+            display: block;
+        }}
+        #message.error {{
+            background: #fee2e2;
+            color: #991b1b;
+            border: 1px solid #ef4444;
+            display: block;
+        }}
+        @keyframes pulse {{
+            0%, 100% {{ opacity: 1; }}
+            50% {{ opacity: 0.5; }}
+        }}
+        .loading {{
+            animation: pulse 1.5s ease-in-out infinite;
+        }}
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>AWS ALB Health Check Demo</h1>
+            <p>Infrastructure Monitoring & Incident Simulation Dashboard</p>
+        </div>
+
+        <div class="card">
+            <div id="message"></div>
+
+            <div class="health-status {status_class}">
+                <div>
+                    <div>Health Status</div>
+                    <div style="font-size: 1rem; opacity: 0.9; margin-top: 5px;">{health_status["reason"]}</div>
+                </div>
+                <div class="icon">{status_icon}</div>
+            </div>
+
+            <div class="status-card">
+                <div class="status-item">
+                    <h3>Instance ID</h3>
+                    <div class="value">{instance_id[:10]}...</div>
+                </div>
+                <div class="status-item">
+                    <h3>Environment</h3>
+                    <div class="value">{environment.upper()}</div>
+                </div>
+                <div class="status-item">
+                    <h3>Service</h3>
+                    <div class="value">Demo WebApp</div>
+                </div>
+                <div class="status-item">
+                    <h3>Last Updated</h3>
+                    <div class="value" id="lastUpdated">Just now</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="card">
+            <h2 class="section-title">Incident Simulation Controls</h2>
+            <p style="color: #6b7280; margin-bottom: 20px;">
+                Trigger various failure scenarios to test infrastructure monitoring and auto-remediation.
+            </p>
+
+            <div class="incident-controls">
+                <button class="btn btn-danger" onclick="triggerIncident('unhealthy')">
+                    <span>💔</span> Trigger Unhealthy
+                </button>
+                <button class="btn btn-danger" onclick="triggerIncident('crash')">
+                    <span>💥</span> Crash Application
+                </button>
+                <button class="btn btn-warning" onclick="triggerIncident('slow-health')">
+                    <span>🐌</span> Slow Health Check
+                </button>
+                <button class="btn btn-success" onclick="triggerIncident('healthy')">
+                    <span>✨</span> Restore Healthy
+                </button>
+            </div>
+        </div>
+
+        <div class="card">
+            <h2 class="section-title">API Endpoints</h2>
+            <div class="endpoint">
+                <div><span class="method">GET</span> <code>/</code></div>
+                <div>Service information</div>
+            </div>
+            <div class="endpoint">
+                <div><span class="method">GET</span> <code>/health</code></div>
+                <div>ALB health check endpoint</div>
+            </div>
+            <div class="endpoint">
+                <div><span class="method">GET</span> <code>/status</code></div>
+                <div>Current health status (JSON)</div>
+            </div>
+            <div class="endpoint">
+                <div><span class="method">GET</span> <code>/simulate/unhealthy</code></div>
+                <div>Trigger health check failure</div>
+            </div>
+            <div class="endpoint">
+                <div><span class="method">GET</span> <code>/simulate/healthy</code></div>
+                <div>Restore healthy status</div>
+            </div>
+            <div class="endpoint">
+                <div><span class="method">GET</span> <code>/simulate/crash</code></div>
+                <div>Crash application (exits in 5s)</div>
+            </div>
+            <div class="endpoint">
+                <div><span class="method">GET</span> <code>/simulate/slow-health</code></div>
+                <div>Simulate slow response times</div>
+            </div>
+        </div>
+
+        <div class="footer">
+            <p>AWS ALB Health Check Demo • Built with Python • Auto-refresh every 5 seconds</p>
+        </div>
+    </div>
+
+    <script>
+        function showMessage(text, type) {{
+            const messageEl = document.getElementById('message');
+            messageEl.textContent = text;
+            messageEl.className = type;
+            setTimeout(() => {{
+                messageEl.style.display = 'none';
+            }}, 5000);
+        }}
+
+        async function triggerIncident(type) {{
+            const endpoints = {{
+                'unhealthy': '/simulate/unhealthy',
+                'healthy': '/simulate/healthy',
+                'crash': '/simulate/crash',
+                'slow-health': '/simulate/slow-health'
+            }};
+
+            try {{
+                const response = await fetch(endpoints[type]);
+                const data = await response.json();
+                showMessage(data.message, 'success');
+
+                if (type === 'crash') {{
+                    showMessage('Application will crash in 5 seconds!', 'error');
+                }} else {{
+                    setTimeout(refreshStatus, 1000);
+                }}
+            }} catch (error) {{
+                showMessage('Failed to trigger incident: ' + error.message, 'error');
+            }}
+        }}
+
+        async function refreshStatus() {{
+            try {{
+                const response = await fetch('/status');
+                const data = await response.json();
+                // Reload page to show updated status
+                location.reload();
+            }} catch (error) {{
+                console.error('Failed to refresh status:', error);
+            }}
+        }}
+
+        // Auto-refresh every 5 seconds
+        setInterval(refreshStatus, 5000);
+
+        // Update last updated time
+        function updateTime() {{
+            const now = new Date();
+            document.getElementById('lastUpdated').textContent =
+                now.toLocaleTimeString();
+        }}
+        updateTime();
+        setInterval(updateTime, 1000);
+    </script>
+</body>
+</html>'''
+
     def do_GET(self):
         if self.path == '/':
-            self.send_json_response(200, {
-                "service": "demo-webapp",
-                "instance": os.environ.get('INSTANCE_ID', 'unknown'),
-                "environment": os.environ.get('ENVIRONMENT', 'unknown'),
-                "status": "running"
-            })
+            self.send_html_response(self.get_dashboard_html())
 
         elif self.path == '/health':
             if health_status["healthy"]:
@@ -70,6 +442,7 @@ class WebHandler(BaseHTTPRequestHandler):
         elif self.path == '/simulate/unhealthy':
             health_status["healthy"] = False
             health_status["reason"] = "Simulated database connection failure"
+            health_status["last_updated"] = datetime.now().isoformat()
             print(f"[{datetime.now()}] Simulated unhealthy state triggered")
             self.send_json_response(200, {
                 "message": "Health check will now fail",
@@ -79,6 +452,7 @@ class WebHandler(BaseHTTPRequestHandler):
         elif self.path == '/simulate/healthy':
             health_status["healthy"] = True
             health_status["reason"] = "OK"
+            health_status["last_updated"] = datetime.now().isoformat()
             print(f"[{datetime.now()}] Restored to healthy state")
             self.send_json_response(200, {
                 "message": "Health check restored to healthy"
@@ -97,6 +471,7 @@ class WebHandler(BaseHTTPRequestHandler):
         elif self.path == '/simulate/slow-health':
             health_status["healthy"] = False
             health_status["reason"] = "Health check timeout simulation"
+            health_status["last_updated"] = datetime.now().isoformat()
             print(f"[{datetime.now()}] Simulated slow health check")
             self.send_json_response(200, {
                 "message": "Health checks will now be slow/timeout"
