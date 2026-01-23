@@ -1,7 +1,7 @@
 variable "prefix" {
   description = "Prefix for resource names"
   type        = string
-  default     = "devops-demo-316330059714"
+  default     = "devops-agent-demo-316330059714"
 
   validation {
     condition     = can(regex("^[a-z0-9-]+$", var.prefix))

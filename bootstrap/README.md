@@ -73,7 +73,7 @@ No modules.
 
 | Name | Description | Type | Default | Required |
 |------|-------------|------|---------|:--------:|
-| <a name="input_prefix"></a> [prefix](#input\_prefix) | Prefix for resource names | `string` | `"devops-demo-316330059714"` | no |
+| <a name="input_prefix"></a> [prefix](#input\_prefix) | Prefix for resource names | `string` | `"devops-agent-demo-316330059714"` | no |
 | <a name="input_region"></a> [region](#input\_region) | AWS region for backend resources | `string` | `"us-east-1"` | no |
 
 ## Outputs

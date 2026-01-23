@@ -14,9 +14,9 @@ terraform {
 
   # AWS S3 backend for team collaboration
   backend "s3" {
-    bucket         = "devops-demo-316330059714-terraform-state"
+    bucket         = "devops-agent-demo-316330059714-terraform-state"
     key            = "env/dev/terraform.tfstate"
-    region         = "ap-southeast-1"
+    region         = "us-east-1"
     dynamodb_table = "devops-demo-316330059714-terraform-state-lock"
     encrypt        = true
   }
