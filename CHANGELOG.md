@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.5.1](https://github.com/duyluann/aws-agents-demo/compare/v1.5.0...v1.5.1) (2026-01-23)
+
+
+### Bug Fixes
+
+* **userdata:** add sudo to yum update and install commands in UserData script ([56f6104](https://github.com/duyluann/aws-agents-demo/commit/56f61045fe463c85b14e945cc4d7f9a643b08dc5))
+
 # [1.5.0](https://github.com/duyluann/aws-agents-demo/compare/v1.4.0...v1.5.0) (2026-01-23)
 
 
