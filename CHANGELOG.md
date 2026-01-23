@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file.
 
+# [1.2.0](https://github.com/duyluann/aws-agents-demo/compare/v1.1.0...v1.2.0) (2026-01-23)
+
+
+### Features
+
+* add incident trigger workflow for DevOps agent testing ([00cf04d](https://github.com/duyluann/aws-agents-demo/commit/00cf04d0af6501eafa6294769c59bf43b2daf133))
+
 # [1.1.0](https://github.com/duyluann/aws-agents-demo/compare/v1.0.0...v1.1.0) (2026-01-23)
 
 
