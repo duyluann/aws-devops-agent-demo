@@ -2,7 +2,7 @@
 # Production-like settings with cost optimizations
 
 env    = "qa"
-region = "ap-southeast-1"
+region = "us-east-1"
 prefix = "devops-demo"
 
 # Network

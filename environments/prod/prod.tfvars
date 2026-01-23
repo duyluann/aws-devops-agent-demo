@@ -2,7 +2,7 @@
 # Full features enabled, no auto-shutdown
 
 env    = "prod"
-region = "ap-southeast-1"
+region = "us-east-1"
 prefix = "devops-demo"
 
 # Network

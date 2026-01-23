@@ -12,5 +12,5 @@ variable "prefix" {
 variable "region" {
   description = "AWS region for backend resources"
   type        = string
-  default     = "ap-southeast-1"
+  default     = "us-east-1"
 }
