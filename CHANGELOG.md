@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file.
 
+# [1.4.0](https://github.com/duyluann/aws-agents-demo/compare/v1.3.6...v1.4.0) (2026-01-23)
+
+
+### Features
+
+* **monitoring:** implement fast alarms, auto-recovery, and custom metrics ([4193587](https://github.com/duyluann/aws-agents-demo/commit/419358735ecab1508650e87d3275366b95210e0c))
+
 ## [1.3.6](https://github.com/duyluann/aws-agents-demo/compare/v1.3.5...v1.3.6) (2026-01-23)
 
 
