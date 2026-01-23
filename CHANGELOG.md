@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.3.2](https://github.com/duyluann/aws-agents-demo/compare/v1.3.1...v1.3.2) (2026-01-23)
+
+
+### Bug Fixes
+
+* update region from ap-southeast-1 to us-east-1 in environment configurations ([579b9d1](https://github.com/duyluann/aws-agents-demo/commit/579b9d188f686193abdda4cafa6d63221376e1d3))
+
 ## [1.3.1](https://github.com/duyluann/aws-agents-demo/compare/v1.3.0...v1.3.1) (2026-01-23)
 
 
