@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file.
 
+# 1.0.0 (2026-01-23)
+
+
+### Features
+
+* migrate ALB healthcheck demo from CloudFormation to Terraform ([f2242aa](https://github.com/duyluann/aws-agents-demo/commit/f2242aa01bb0ea03cf5da097d7efa37e8c033224))
+
 # [1.17.0](https://github.com/ops4life/terraform-repo-template/compare/v1.16.0...v1.17.0) (2026-01-17)
 
 
