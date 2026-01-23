@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.3.4](https://github.com/duyluann/aws-agents-demo/compare/v1.3.3...v1.3.4) (2026-01-23)
+
+
+### Bug Fixes
+
+* correct dynamodb_table name in Terraform configuration ([4104ed4](https://github.com/duyluann/aws-agents-demo/commit/4104ed44627947c528f16036c73ca01484783e5e))
+
 ## [1.3.3](https://github.com/duyluann/aws-agents-demo/compare/v1.3.2...v1.3.3) (2026-01-23)
 
 
