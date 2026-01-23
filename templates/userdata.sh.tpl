@@ -12,7 +12,7 @@ echo "Environment: ${environment}"
 
 # Update system (don't fail if this has issues)
 yum update -y || echo "yum update had some issues, continuing..."
-yum install -y python3 python3-pip jq curl
+yum install -y python3 python3-pip jq curl python3-boto3
 
 # Create application directory
 mkdir -p /opt/webapp
@@ -28,9 +28,113 @@ import sys
 import threading
 import time
 from datetime import datetime
+import boto3
+from botocore.exceptions import ClientError
+
+# CloudWatch metrics client
+try:
+    cloudwatch = boto3.client('cloudwatch')
+    metrics_enabled = True
+    print("CloudWatch metrics publishing enabled")
+except Exception as e:
+    print(f"Warning: CloudWatch client initialization failed: {e}")
+    metrics_enabled = False
+
+# Metric configuration
+METRIC_NAMESPACE = "CustomApp/HealthDemo"
 
 # Health status control (shared state)
 health_status = {"healthy": True, "reason": "OK", "last_updated": datetime.now().isoformat()}
+
+def publish_health_metric():
+    """Publish current health status to CloudWatch"""
+    if not metrics_enabled:
+        return
+
+    try:
+        instance_id = os.environ.get('INSTANCE_ID', 'unknown')
+        environment = os.environ.get('ENVIRONMENT', 'unknown')
+
+        metric_data = [
+            {
+                'MetricName': 'HealthStatus',
+                'Value': 1.0 if health_status["healthy"] else 0.0,
+                'Unit': 'None',
+                'Timestamp': datetime.now(),
+                'Dimensions': [
+                    {'Name': 'InstanceId', 'Value': instance_id},
+                    {'Name': 'Environment', 'Value': environment}
+                ]
+            }
+        ]
+
+        cloudwatch.put_metric_data(
+            Namespace=METRIC_NAMESPACE,
+            MetricData=metric_data
+        )
+    except ClientError as e:
+        print(f"Error publishing metrics: {e}")
+
+def publish_incident_metric(incident_type):
+    """Publish incident simulation count to CloudWatch"""
+    if not metrics_enabled:
+        return
+
+    try:
+        instance_id = os.environ.get('INSTANCE_ID', 'unknown')
+        environment = os.environ.get('ENVIRONMENT', 'unknown')
+
+        cloudwatch.put_metric_data(
+            Namespace=METRIC_NAMESPACE,
+            MetricData=[
+                {
+                    'MetricName': 'IncidentSimulations',
+                    'Value': 1.0,
+                    'Unit': 'Count',
+                    'Timestamp': datetime.now(),
+                    'Dimensions': [
+                        {'Name': 'InstanceId', 'Value': instance_id},
+                        {'Name': 'Environment', 'Value': environment},
+                        {'Name': 'IncidentType', 'Value': incident_type}
+                    ]
+                }
+            ]
+        )
+    except ClientError as e:
+        print(f"Error publishing incident metric: {e}")
+
+# Auto-recovery configuration
+auto_recovery_enabled = False
+recovery_timer = None
+
+def schedule_auto_recovery(delay_seconds=60):
+    """Schedule automatic health recovery after specified delay"""
+    global auto_recovery_enabled, recovery_timer
+
+    if recovery_timer:
+        recovery_timer.cancel()
+
+    def auto_recover():
+        global health_status, auto_recovery_enabled
+        health_status["healthy"] = True
+        health_status["reason"] = "Auto-recovered"
+        health_status["last_updated"] = datetime.now().isoformat()
+        auto_recovery_enabled = False
+        publish_health_metric()
+        print(f"[{datetime.now()}] Auto-recovery executed")
+
+    auto_recovery_enabled = True
+    recovery_timer = threading.Timer(delay_seconds, auto_recover)
+    recovery_timer.daemon = True
+    recovery_timer.start()
+    print(f"[{datetime.now()}] Auto-recovery scheduled in {delay_seconds}s")
+
+def cancel_auto_recovery():
+    """Cancel any pending auto-recovery"""
+    global auto_recovery_enabled, recovery_timer
+    if recovery_timer:
+        recovery_timer.cancel()
+    auto_recovery_enabled = False
 
 class WebHandler(BaseHTTPRequestHandler):
     def log_message(self, format, *args):
@@ -351,11 +455,15 @@ class WebHandler(BaseHTTPRequestHandler):
             </div>
             <div class="endpoint">
                 <div><span class="method">GET</span> <code>/simulate/crash</code></div>
-                <div>Crash application (exits in 5s)</div>
+                <div>Crash application (exits in 10s)</div>
             </div>
             <div class="endpoint">
                 <div><span class="method">GET</span> <code>/simulate/slow-health</code></div>
                 <div>Simulate slow response times</div>
+            </div>
+            <div class="endpoint">
+                <div><span class="method">GET</span> <code>/recovery-status</code></div>
+                <div>Auto-recovery and metrics status</div>
             </div>
         </div>
 
@@ -388,7 +496,7 @@ class WebHandler(BaseHTTPRequestHandler):
                 showMessage(data.message, 'success');
 
                 if (type === 'crash') {{
-                    showMessage('Application will crash in 5 seconds!', 'error');
+                    showMessage('Application will crash in 10 seconds!', 'error');
                 }} else {{
                     setTimeout(refreshStatus, 1000);
                 }}
@@ -439,20 +547,33 @@ class WebHandler(BaseHTTPRequestHandler):
         elif self.path == '/status':
             self.send_json_response(200, health_status)
 
+        elif self.path == '/recovery-status':
+            self.send_json_response(200, {
+                "auto_recovery_enabled": auto_recovery_enabled,
+                "health_status": health_status,
+                "metrics_enabled": metrics_enabled
+            })
+
         elif self.path == '/simulate/unhealthy':
             health_status["healthy"] = False
             health_status["reason"] = "Simulated database connection failure"
             health_status["last_updated"] = datetime.now().isoformat()
+            schedule_auto_recovery(60)  # Auto-recover in 60 seconds
+            publish_health_metric()
+            publish_incident_metric('unhealthy')
             print(f"[{datetime.now()}] Simulated unhealthy state triggered")
             self.send_json_response(200, {
-                "message": "Health check will now fail",
-                "reason": health_status["reason"]
+                "message": "Health check will now fail (auto-recovery in 60s)",
+                "reason": health_status["reason"],
+                "auto_recovery": "enabled"
             })
 
         elif self.path == '/simulate/healthy':
+            cancel_auto_recovery()  # Cancel any pending recovery
             health_status["healthy"] = True
             health_status["reason"] = "OK"
             health_status["last_updated"] = datetime.now().isoformat()
+            publish_health_metric()
             print(f"[{datetime.now()}] Restored to healthy state")
             self.send_json_response(200, {
                 "message": "Health check restored to healthy"
@@ -460,21 +581,26 @@ class WebHandler(BaseHTTPRequestHandler):
 
         elif self.path == '/simulate/crash':
             def delayed_crash():
-                time.sleep(5)
+                time.sleep(10)  # 10 seconds - fast crash for testing
                 print(f"[{datetime.now()}] Simulated crash - exiting")
                 os._exit(1)
             threading.Thread(target=delayed_crash, daemon=True).start()
             self.send_json_response(200, {
-                "message": "Application will crash in 5 seconds"
+                "message": "Application will crash in 10 seconds"
             })
+            publish_incident_metric('crash')
 
         elif self.path == '/simulate/slow-health':
             health_status["healthy"] = False
             health_status["reason"] = "Health check timeout simulation"
             health_status["last_updated"] = datetime.now().isoformat()
+            schedule_auto_recovery(90)  # Auto-recover in 90 seconds
+            publish_health_metric()
+            publish_incident_metric('slow-health')
             print(f"[{datetime.now()}] Simulated slow health check")
             self.send_json_response(200, {
-                "message": "Health checks will now be slow/timeout"
+                "message": "Health checks will now be slow/timeout (auto-recovery in 90s)",
+                "auto_recovery": "enabled"
             })
 
         else:
@@ -489,6 +615,18 @@ if __name__ == '__main__':
     print(f"[{datetime.now()}] Starting HTTP server on 0.0.0.0:{port}")
     print(f"[{datetime.now()}] Instance ID: {os.environ.get('INSTANCE_ID', 'unknown')}")
     print(f"[{datetime.now()}] Environment: {os.environ.get('ENVIRONMENT', 'unknown')}")
+
+    # Start background metrics publisher
+    def periodic_metrics_publisher():
+        """Publish metrics every 60 seconds"""
+        while True:
+            time.sleep(60)
+            publish_health_metric()
+
+    metrics_thread = threading.Thread(target=periodic_metrics_publisher, daemon=True)
+    metrics_thread.start()
+    print(f"[{datetime.now()}] Periodic metrics publishing started")
+
     sys.stdout.flush()
     try:
         httpd.serve_forever()
@@ -561,7 +699,7 @@ cat > /opt/webapp/trigger-crash.sh << 'EOF'
 #!/bin/bash
 curl -s http://localhost/simulate/crash
 echo ""
-echo "Application will crash in 5 seconds."
+echo "Application will crash in 10 seconds."
 EOF
 chmod +x /opt/webapp/trigger-crash.sh
 

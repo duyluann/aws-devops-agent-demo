@@ -2,7 +2,7 @@
 # Cost-optimized settings for development and testing
 
 env    = "dev"
-region = "ap-southeast-1"
+region = "us-east-1"
 prefix = "devops-demo"
 
 # Network

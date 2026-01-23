@@ -92,7 +92,7 @@ Makes all EC2 instances fail health checks simultaneously.
 **Use Case**: Test total service outage detection
 
 #### 3. Crash Instance (`crash_instance`)
-Crashes the application on a target instance (exits after 5 seconds).
+Crashes the application on a target instance (exits after 5 minutes).
 
 **Triggers**: Unhealthy host count alarm
 **Expected Time to Alarm**: 2-4 minutes

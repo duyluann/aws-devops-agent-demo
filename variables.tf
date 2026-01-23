@@ -1,7 +1,7 @@
 variable "region" {
   description = "The region to deploy the resources"
   type        = string
-  default     = "ap-southeast-1"
+  default     = "us-east-1"
 }
 
 variable "env" {

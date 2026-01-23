@@ -32,7 +32,7 @@ resource "aws_instance" "web" {
   }
 
   # User data script (gzip compressed to stay within 16KB limit)
-  user_data = base64gzip(templatefile("${path.module}/templates/userdata.sh.tpl", {
+  user_data_base64 = base64gzip(templatefile("${path.module}/templates/userdata.sh.tpl", {
     instance_name = "${local.name_prefix}-instance-${count.index + 1}"
     environment   = var.env
   }))

@@ -2,6 +2,62 @@
 
 All notable changes to this project will be documented in this file.
 
+# [1.4.0](https://github.com/duyluann/aws-agents-demo/compare/v1.3.6...v1.4.0) (2026-01-23)
+
+
+### Features
+
+* **monitoring:** implement fast alarms, auto-recovery, and custom metrics ([4193587](https://github.com/duyluann/aws-agents-demo/commit/419358735ecab1508650e87d3275366b95210e0c))
+
+## [1.3.6](https://github.com/duyluann/aws-agents-demo/compare/v1.3.5...v1.3.6) (2026-01-23)
+
+
+### Bug Fixes
+
+* update crash duration in incident simulation to 5 minutes ([2b8a29e](https://github.com/duyluann/aws-agents-demo/commit/2b8a29eb31345c047160bb28296308687e77f816))
+
+## [1.3.5](https://github.com/duyluann/aws-agents-demo/compare/v1.3.4...v1.3.5) (2026-01-23)
+
+
+### Bug Fixes
+
+* update CloudWatch alarm periods to 10 seconds ([ea42b9d](https://github.com/duyluann/aws-agents-demo/commit/ea42b9d05cfebb16c777031e82f4a8b1b1a25a83))
+
+## [1.3.4](https://github.com/duyluann/aws-agents-demo/compare/v1.3.3...v1.3.4) (2026-01-23)
+
+
+### Bug Fixes
+
+* correct dynamodb_table name in Terraform configuration ([4104ed4](https://github.com/duyluann/aws-agents-demo/commit/4104ed44627947c528f16036c73ca01484783e5e))
+
+## [1.3.3](https://github.com/duyluann/aws-agents-demo/compare/v1.3.2...v1.3.3) (2026-01-23)
+
+
+### Bug Fixes
+
+* update S3 bucket name and region in Terraform configuration ([c421629](https://github.com/duyluann/aws-agents-demo/commit/c421629457f3672eae332f786ee49996111bbec1))
+
+## [1.3.2](https://github.com/duyluann/aws-agents-demo/compare/v1.3.1...v1.3.2) (2026-01-23)
+
+
+### Bug Fixes
+
+* update region from ap-southeast-1 to us-east-1 in environment configurations ([579b9d1](https://github.com/duyluann/aws-agents-demo/commit/579b9d188f686193abdda4cafa6d63221376e1d3))
+
+## [1.3.1](https://github.com/duyluann/aws-agents-demo/compare/v1.3.0...v1.3.1) (2026-01-23)
+
+
+### Bug Fixes
+
+* use gzip compression for user_data to stay within 16KB limit ([124c53a](https://github.com/duyluann/aws-agents-demo/commit/124c53ae0b78ce9ee7a6c2634a3721d9d96be038)), closes [#6](https://github.com/duyluann/aws-agents-demo/issues/6)
+
+# [1.3.0](https://github.com/duyluann/aws-agents-demo/compare/v1.2.0...v1.3.0) (2026-01-23)
+
+
+### Features
+
+* enhance web application UI with modern dashboard ([848b6db](https://github.com/duyluann/aws-agents-demo/commit/848b6dbb0693325a7a8c85f8b42b366bf4242577))
+
 # [1.2.0](https://github.com/duyluann/aws-agents-demo/compare/v1.1.0...v1.2.0) (2026-01-23)
 
 
