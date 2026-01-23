@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file.
 
+# [1.1.0](https://github.com/duyluann/aws-agents-demo/compare/v1.0.0...v1.1.0) (2026-01-23)
+
+
+### Features
+
+* complete S3 backend migration and bootstrap infrastructure ([f63e518](https://github.com/duyluann/aws-agents-demo/commit/f63e518def2016e104e434685cdb6193e31f91c2))
+
 # 1.0.0 (2026-01-23)
 
 
