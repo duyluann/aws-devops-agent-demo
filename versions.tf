@@ -6,12 +6,16 @@ terraform {
       source  = "hashicorp/aws"
       version = "~> 6.28"
     }
+    archive = {
+      source  = "hashicorp/archive"
+      version = "~> 2.7"
+    }
   }
 
-  // Local backend for development
+  # Local backend for development
   backend "local" {}
 
-  // AWS S3 backend for team collaboration (uncomment and configure)
+  # AWS S3 backend for team collaboration (uncomment and configure)
   # backend "s3" {
   #   bucket         = "your-terraform-state-bucket"
   #   key            = "terraform.tfstate"
