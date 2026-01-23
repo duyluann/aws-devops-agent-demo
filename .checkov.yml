@@ -35,6 +35,9 @@ skip-check:
   # CloudWatch Logs
   - CKV_AWS_338       # CloudWatch log retention - short retention acceptable for demo logs
 
+  # DynamoDB
+  - CKV_AWS_119       # DynamoDB KMS encryption - default encryption sufficient for state lock table
+
   # IAM
   - CKV_AWS_355       # IAM wildcard resource - Lambda needs to stop instances by tag, not specific ARN
   - CKV_AWS_290       # IAM wildcard resource - same as above
