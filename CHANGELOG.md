@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.5.2](https://github.com/duyluann/aws-agents-demo/compare/v1.5.1...v1.5.2) (2026-01-23)
+
+
+### Bug Fixes
+
+* **userdata:** remove curl from package installation in UserData script ([26fce7f](https://github.com/duyluann/aws-agents-demo/commit/26fce7f4647db9b2d50a219c0c3c606a063be64c))
+
 ## [1.5.1](https://github.com/duyluann/aws-agents-demo/compare/v1.5.0...v1.5.1) (2026-01-23)
 
 
