@@ -14,7 +14,7 @@ echo "Environment: ${environment}"
 sudo yum update -y || echo "yum update had some issues, continuing..."
 
 # Install Python packages including pip and setuptools
-sudo yum install -y python3-pip python3 python3-setuptools jq curl
+sudo yum install -y python3-pip python3 python3-setuptools jq
 
 # Install boto3 using pip with --user flag
 pip3 install boto3 --user
