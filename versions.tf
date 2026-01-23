@@ -12,15 +12,12 @@ terraform {
     }
   }
 
-  # Local backend for development
-  backend "local" {}
-
-  # AWS S3 backend for team collaboration (uncomment and configure)
-  # backend "s3" {
-  #   bucket         = "your-terraform-state-bucket"
-  #   key            = "terraform.tfstate"
-  #   region         = "ap-southeast-1"
-  #   dynamodb_table = "terraform-state-lock"
-  #   encrypt        = true
-  # }
+  # AWS S3 backend for team collaboration
+  backend "s3" {
+    bucket         = "devops-demo-316330059714-terraform-state"
+    key            = "env/dev/terraform.tfstate"
+    region         = "ap-southeast-1"
+    dynamodb_table = "devops-demo-316330059714-terraform-state-lock"
+    encrypt        = true
+  }
 }
