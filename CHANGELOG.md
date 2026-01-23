@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file.
 
+# [1.3.0](https://github.com/duyluann/aws-agents-demo/compare/v1.2.0...v1.3.0) (2026-01-23)
+
+
+### Features
+
+* enhance web application UI with modern dashboard ([848b6db](https://github.com/duyluann/aws-agents-demo/commit/848b6dbb0693325a7a8c85f8b42b366bf4242577))
+
 # [1.2.0](https://github.com/duyluann/aws-agents-demo/compare/v1.1.0...v1.2.0) (2026-01-23)
 
 
