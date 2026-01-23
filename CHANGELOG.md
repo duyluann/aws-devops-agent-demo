@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.3.6](https://github.com/duyluann/aws-agents-demo/compare/v1.3.5...v1.3.6) (2026-01-23)
+
+
+### Bug Fixes
+
+* update crash duration in incident simulation to 5 minutes ([2b8a29e](https://github.com/duyluann/aws-agents-demo/commit/2b8a29eb31345c047160bb28296308687e77f816))
+
 ## [1.3.5](https://github.com/duyluann/aws-agents-demo/compare/v1.3.4...v1.3.5) (2026-01-23)
 
 
