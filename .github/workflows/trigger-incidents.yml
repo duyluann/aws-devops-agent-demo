@@ -1,0 +1,439 @@
+name: Trigger Incidents for DevOps Agent Testing
+
+on:
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: "Target environment"
+        required: true
+        type: choice
+        options:
+          - dev
+          - qa
+          - prod
+      incident_type:
+        description: "Type of incident to trigger"
+        required: true
+        type: choice
+        options:
+          - unhealthy_host
+          - unhealthy_all
+          - crash_instance
+          - slow_health
+          - shutdown_instances
+          - http_5xx_flood
+      target_instance_index:
+        description: "Which instance to target (0 for first, 1 for second, etc.)"
+        required: false
+        default: "0"
+        type: string
+      restore_after_incident:
+        description: "Automatically restore healthy state after incident"
+        required: false
+        default: false
+        type: boolean
+      restore_delay_seconds:
+        description: "Delay before auto-restore (seconds)"
+        required: false
+        default: "300"
+        type: string
+      wait_for_alarm:
+        description: "Wait for CloudWatch alarm to trigger"
+        required: false
+        default: true
+        type: boolean
+
+env:
+  TF_VERSION: "1.10.5"
+
+jobs:
+  trigger-incident:
+    name: Trigger ${{ github.event.inputs.incident_type }} - ${{ github.event.inputs.environment }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+
+    permissions:
+      contents: read
+      id-token: write
+
+    environment:
+      name: ${{ github.event.inputs.environment }}
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v6
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: ${{ env.TF_VERSION }}
+          terraform_wrapper: false
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v5.1.1
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ secrets.AWS_REGION }}
+
+      - name: Discover Infrastructure
+        id: discover
+        run: |
+          echo "🔍 Discovering infrastructure for environment: ${{ github.event.inputs.environment }}"
+
+          # Initialize Terraform
+          terraform init
+
+          # Get Terraform outputs
+          terraform output -json > infrastructure.json
+
+          # Extract values
+          ALB_DNS=$(jq -r '.alb_dns_name.value // empty' infrastructure.json)
+          ALB_URL=$(jq -r '.alb_url.value // empty' infrastructure.json)
+          INSTANCE_IDS_JSON=$(jq -r '.instance_ids.value // []' infrastructure.json)
+          INSTANCE_IDS=($(echo $INSTANCE_IDS_JSON | jq -r '.[]'))
+          LAMBDA_ARN=$(jq -r '.auto_shutdown_lambda_arn.value // empty' infrastructure.json)
+
+          # Get alarm names
+          ALARM_UNHEALTHY=$(jq -r '.cloudwatch_alarm_names.value.unhealthy_hosts // empty' infrastructure.json)
+          ALARM_RESPONSE_TIME=$(jq -r '.cloudwatch_alarm_names.value.high_response_time // empty' infrastructure.json)
+          ALARM_5XX=$(jq -r '.cloudwatch_alarm_names.value.http_5xx_errors // empty' infrastructure.json)
+
+          # Validate we have necessary infrastructure
+          if [ -z "$ALB_DNS" ] || [ ${#INSTANCE_IDS[@]} -eq 0 ]; then
+            echo "❌ ERROR: Could not discover infrastructure. Deploy the environment first."
+            exit 1
+          fi
+
+          # Export to GitHub environment
+          echo "alb_dns=${ALB_DNS}" >> $GITHUB_OUTPUT
+          echo "alb_url=${ALB_URL}" >> $GITHUB_OUTPUT
+          echo "instance_ids=${INSTANCE_IDS[*]}" >> $GITHUB_OUTPUT
+          echo "lambda_arn=${LAMBDA_ARN}" >> $GITHUB_OUTPUT
+          echo "alarm_unhealthy=${ALARM_UNHEALTHY}" >> $GITHUB_OUTPUT
+          echo "alarm_response_time=${ALARM_RESPONSE_TIME}" >> $GITHUB_OUTPUT
+          echo "alarm_5xx=${ALARM_5XX}" >> $GITHUB_OUTPUT
+
+          echo "✅ Infrastructure discovered:"
+          echo "  - ALB URL: ${ALB_URL}"
+          echo "  - Instance count: ${#INSTANCE_IDS[@]}"
+          echo "  - Instance IDs: ${INSTANCE_IDS[*]}"
+          echo "  - Lambda ARN: ${LAMBDA_ARN:-Not enabled}"
+          echo "  - Alarms: ${ALARM_UNHEALTHY}, ${ALARM_RESPONSE_TIME}, ${ALARM_5XX}"
+
+      - name: Pre-flight Health Check
+        id: preflight
+        run: |
+          echo "🏥 Running pre-flight health checks..."
+
+          # Check instance states
+          IFS=' ' read -r -a INSTANCE_IDS <<< "${{ steps.discover.outputs.instance_ids }}"
+
+          for INSTANCE_ID in "${INSTANCE_IDS[@]}"; do
+            STATE=$(aws ec2 describe-instances \
+              --instance-ids ${INSTANCE_ID} \
+              --query 'Reservations[0].Instances[0].State.Name' \
+              --output text)
+
+            echo "  - Instance ${INSTANCE_ID}: ${STATE}"
+
+            if [ "$STATE" != "running" ]; then
+              echo "⚠️ WARNING: Instance ${INSTANCE_ID} is not running (state: ${STATE})"
+            fi
+          done
+
+          # Check ALB target health
+          echo ""
+          echo "🎯 ALB target health status:"
+          ALB_ARN=$(terraform output -raw alb_arn)
+          TARGET_GROUP_ARN=$(aws elbv2 describe-target-groups \
+            --load-balancer-arn ${ALB_ARN} \
+            --query 'TargetGroups[0].TargetGroupArn' \
+            --output text)
+
+          aws elbv2 describe-target-health \
+            --target-group-arn ${TARGET_GROUP_ARN} \
+            --query 'TargetHealthDescriptions[*].[Target.Id,TargetHealth.State]' \
+            --output table
+
+          echo "✅ Pre-flight checks complete"
+
+      - name: Trigger Incident
+        id: trigger
+        run: |
+          echo "🚨 Triggering incident: ${{ github.event.inputs.incident_type }}"
+
+          IFS=' ' read -r -a INSTANCE_IDS <<< "${{ steps.discover.outputs.instance_ids }}"
+          TARGET_INDEX=${{ github.event.inputs.target_instance_index }}
+          INCIDENT_TYPE="${{ github.event.inputs.incident_type }}"
+
+          # Validate target index
+          if [ $TARGET_INDEX -ge ${#INSTANCE_IDS[@]} ]; then
+            echo "❌ ERROR: Target index $TARGET_INDEX out of range (0-$((${#INSTANCE_IDS[@]}-1)))"
+            exit 1
+          fi
+
+          TARGET_INSTANCE=${INSTANCE_IDS[$TARGET_INDEX]}
+
+          case $INCIDENT_TYPE in
+            unhealthy_host)
+              echo "📍 Making instance ${TARGET_INSTANCE} unhealthy..."
+              COMMAND_ID=$(aws ssm send-command \
+                --instance-ids ${TARGET_INSTANCE} \
+                --document-name "AWS-RunShellScript" \
+                --comment "Incident test: unhealthy host" \
+                --parameters 'commands=["curl -X GET http://localhost/simulate/unhealthy"]' \
+                --query 'Command.CommandId' \
+                --output text)
+
+              echo "expected_alarm=${{ steps.discover.outputs.alarm_unhealthy }}" >> $GITHUB_OUTPUT
+              echo "✅ Command sent: ${COMMAND_ID}"
+              ;;
+
+            unhealthy_all)
+              echo "📍 Making ALL instances unhealthy..."
+              for INSTANCE_ID in "${INSTANCE_IDS[@]}"; do
+                COMMAND_ID=$(aws ssm send-command \
+                  --instance-ids ${INSTANCE_ID} \
+                  --document-name "AWS-RunShellScript" \
+                  --comment "Incident test: unhealthy all hosts" \
+                  --parameters 'commands=["curl -X GET http://localhost/simulate/unhealthy"]' \
+                  --query 'Command.CommandId' \
+                  --output text)
+                echo "  - Command sent to ${INSTANCE_ID}: ${COMMAND_ID}"
+              done
+
+              echo "expected_alarm=${{ steps.discover.outputs.alarm_unhealthy }}" >> $GITHUB_OUTPUT
+              ;;
+
+            crash_instance)
+              echo "💥 Crashing instance ${TARGET_INSTANCE}..."
+              COMMAND_ID=$(aws ssm send-command \
+                --instance-ids ${TARGET_INSTANCE} \
+                --document-name "AWS-RunShellScript" \
+                --comment "Incident test: crash instance" \
+                --parameters 'commands=["curl -X GET http://localhost/simulate/crash"]' \
+                --query 'Command.CommandId' \
+                --output text)
+
+              echo "expected_alarm=${{ steps.discover.outputs.alarm_unhealthy }}" >> $GITHUB_OUTPUT
+              echo "✅ Command sent: ${COMMAND_ID}"
+              echo "⚠️ Note: Application will crash in 5 seconds"
+              ;;
+
+            slow_health)
+              echo "🐌 Triggering slow health checks on ${TARGET_INSTANCE}..."
+              COMMAND_ID=$(aws ssm send-command \
+                --instance-ids ${TARGET_INSTANCE} \
+                --document-name "AWS-RunShellScript" \
+                --comment "Incident test: slow health checks" \
+                --parameters 'commands=["curl -X GET http://localhost/simulate/slow-health"]' \
+                --query 'Command.CommandId' \
+                --output text)
+
+              echo "expected_alarm=${{ steps.discover.outputs.alarm_response_time }}" >> $GITHUB_OUTPUT
+              echo "✅ Command sent: ${COMMAND_ID}"
+              ;;
+
+            shutdown_instances)
+              LAMBDA_ARN="${{ steps.discover.outputs.lambda_arn }}"
+              if [ -z "$LAMBDA_ARN" ]; then
+                echo "❌ ERROR: Auto-shutdown Lambda not enabled in this environment"
+                exit 1
+              fi
+
+              echo "🛑 Invoking auto-shutdown Lambda..."
+              aws lambda invoke \
+                --function-name ${LAMBDA_ARN} \
+                --invocation-type Event \
+                /tmp/lambda-response.json
+
+              echo "expected_alarm=${{ steps.discover.outputs.alarm_unhealthy }}" >> $GITHUB_OUTPUT
+              echo "✅ Lambda invoked - instances will stop shortly"
+              ;;
+
+            http_5xx_flood)
+              echo "🌊 Flooding ALB with 5xx errors..."
+              ALB_URL="${{ steps.discover.outputs.alb_url }}"
+
+              # Generate 15 requests to unhealthy endpoint
+              echo "Sending 15 concurrent requests..."
+              for i in {1..15}; do
+                curl -s -o /dev/null "${ALB_URL}/simulate/unhealthy" &
+              done
+              wait
+
+              echo "expected_alarm=${{ steps.discover.outputs.alarm_5xx }}" >> $GITHUB_OUTPUT
+              echo "✅ 5xx flood complete - sent 15 requests"
+              ;;
+
+            *)
+              echo "❌ ERROR: Unknown incident type: ${INCIDENT_TYPE}"
+              exit 1
+              ;;
+          esac
+
+          # Record incident timestamp
+          echo "incident_timestamp=$(date -u +"%Y-%m-%dT%H:%M:%SZ")" >> $GITHUB_OUTPUT
+
+      - name: Monitor CloudWatch Alarms
+        id: monitor
+        if: github.event.inputs.wait_for_alarm == 'true'
+        run: |
+          EXPECTED_ALARM="${{ steps.trigger.outputs.expected_alarm }}"
+
+          if [ -z "$EXPECTED_ALARM" ]; then
+            echo "⚠️ No alarm monitoring configured for this incident type"
+            exit 0
+          fi
+
+          echo "⏳ Monitoring alarm: ${EXPECTED_ALARM}"
+          echo "Waiting up to 5 minutes for alarm state transition..."
+
+          TIMEOUT=300
+          ELAPSED=0
+          ALARM_TRIGGERED=false
+
+          while [ $ELAPSED -lt $TIMEOUT ]; do
+            ALARM_STATE=$(aws cloudwatch describe-alarms \
+              --alarm-names "${EXPECTED_ALARM}" \
+              --query 'MetricAlarms[0].StateValue' \
+              --output text)
+
+            CURRENT_TIME=$(date -u +"%H:%M:%S")
+            echo "[${CURRENT_TIME}] Alarm state: ${ALARM_STATE}"
+
+            if [ "$ALARM_STATE" == "ALARM" ]; then
+              echo "✅ Alarm triggered: ${EXPECTED_ALARM}"
+              echo "alarm_triggered=true" >> $GITHUB_OUTPUT
+              echo "alarm_trigger_time=$(date -u +"%Y-%m-%dT%H:%M:%SZ")" >> $GITHUB_OUTPUT
+              ALARM_TRIGGERED=true
+              break
+            fi
+
+            sleep 30
+            ELAPSED=$((ELAPSED + 30))
+          done
+
+          if [ "$ALARM_TRIGGERED" = false ]; then
+            echo "⚠️ WARNING: Alarm did not trigger within timeout period"
+            echo "alarm_triggered=false" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Restore Healthy State
+        id: restore
+        if: github.event.inputs.restore_after_incident == 'true'
+        run: |
+          RESTORE_DELAY=${{ github.event.inputs.restore_delay_seconds }}
+          INCIDENT_TYPE="${{ github.event.inputs.incident_type }}"
+
+          echo "⏳ Waiting ${RESTORE_DELAY} seconds before restoration..."
+          sleep ${RESTORE_DELAY}
+
+          echo "🔄 Restoring healthy state..."
+
+          IFS=' ' read -r -a INSTANCE_IDS <<< "${{ steps.discover.outputs.instance_ids }}"
+
+          if [ "$INCIDENT_TYPE" == "shutdown_instances" ]; then
+            echo "🚀 Starting stopped instances..."
+            aws ec2 start-instances --instance-ids ${INSTANCE_IDS[@]}
+            echo "✅ Instances starting - may take 1-2 minutes to be fully operational"
+          else
+            echo "🏥 Restoring healthy status on all instances..."
+            for INSTANCE_ID in "${INSTANCE_IDS[@]}"; do
+              COMMAND_ID=$(aws ssm send-command \
+                --instance-ids ${INSTANCE_ID} \
+                --document-name "AWS-RunShellScript" \
+                --comment "Incident test: restore healthy" \
+                --parameters 'commands=["curl -X GET http://localhost/simulate/healthy"]' \
+                --query 'Command.CommandId' \
+                --output text)
+              echo "  - Command sent to ${INSTANCE_ID}: ${COMMAND_ID}"
+            done
+            echo "✅ Restoration commands sent"
+          fi
+
+          echo "restore_timestamp=$(date -u +"%Y-%m-%dT%H:%M:%SZ")" >> $GITHUB_OUTPUT
+
+      - name: Generate Summary
+        if: always()
+        run: |
+          cat >> $GITHUB_STEP_SUMMARY <<'EOF'
+          # 🚨 Incident Trigger Summary
+
+          ## Configuration
+          - **Environment**: ${{ github.event.inputs.environment }}
+          - **Incident Type**: `${{ github.event.inputs.incident_type }}`
+          - **Target Instance Index**: ${{ github.event.inputs.target_instance_index }}
+          - **Auto-restore**: ${{ github.event.inputs.restore_after_incident }}
+
+          ## Infrastructure
+          - **ALB URL**: ${{ steps.discover.outputs.alb_url }}
+          - **Instance Count**: $(echo "${{ steps.discover.outputs.instance_ids }}" | wc -w)
+          - **Instance IDs**: `${{ steps.discover.outputs.instance_ids }}`
+
+          ## Timeline
+          - **Incident Triggered**: ${{ steps.trigger.outputs.incident_timestamp }}
+          EOF
+
+          if [ "${{ github.event.inputs.wait_for_alarm }}" == "true" ]; then
+            cat >> $GITHUB_STEP_SUMMARY <<'EOF'
+          - **Expected Alarm**: `${{ steps.trigger.outputs.expected_alarm }}`
+          - **Alarm Triggered**: ${{ steps.monitor.outputs.alarm_triggered || 'Not monitored' }}
+          EOF
+            if [ "${{ steps.monitor.outputs.alarm_triggered }}" == "true" ]; then
+              cat >> $GITHUB_STEP_SUMMARY <<'EOF'
+          - **Alarm Trigger Time**: ${{ steps.monitor.outputs.alarm_trigger_time }}
+          EOF
+            fi
+          fi
+
+          if [ "${{ github.event.inputs.restore_after_incident }}" == "true" ]; then
+            cat >> $GITHUB_STEP_SUMMARY <<'EOF'
+          - **Restored At**: ${{ steps.restore.outputs.restore_timestamp }}
+          EOF
+          fi
+
+          cat >> $GITHUB_STEP_SUMMARY <<'EOF'
+
+          ## Next Steps
+
+          1. **Verify Incident Impact**:
+             - Check CloudWatch Alarms: [Console Link](https://console.aws.amazon.com/cloudwatch/home?region=${{ secrets.AWS_REGION }}#alarmsV2:)
+             - Check ALB Target Health: [Console Link](https://console.aws.amazon.com/ec2/home?region=${{ secrets.AWS_REGION }}#TargetGroups:)
+
+          2. **Monitor DevOps Agent Response**:
+             - Check agent logs for incident detection
+             - Verify automatic remediation actions (if configured)
+
+          3. **Manual Verification**:
+             ```bash
+             # Check current status
+             curl ${{ steps.discover.outputs.alb_url }}/status
+
+             # Restore manually (if needed)
+             curl ${{ steps.discover.outputs.alb_url }}/simulate/healthy
+             ```
+
+          ---
+
+          💡 **Tip**: Use this workflow to test your DevOps agent's incident response capabilities across different failure scenarios.
+          EOF
+
+      - name: Cleanup on Failure
+        if: failure() && github.event.inputs.restore_after_incident == 'true'
+        run: |
+          echo "⚠️ Workflow failed - attempting cleanup..."
+
+          IFS=' ' read -r -a INSTANCE_IDS <<< "${{ steps.discover.outputs.instance_ids }}"
+
+          # Try to restore healthy state
+          for INSTANCE_ID in "${INSTANCE_IDS[@]}"; do
+            aws ssm send-command \
+              --instance-ids ${INSTANCE_ID} \
+              --document-name "AWS-RunShellScript" \
+              --parameters 'commands=["curl -X GET http://localhost/simulate/healthy"]' \
+              --comment "Cleanup after failed incident test" || true
+          done
+
+          echo "✅ Cleanup attempted"
