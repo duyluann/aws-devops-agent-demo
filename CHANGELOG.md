@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.3.3](https://github.com/duyluann/aws-agents-demo/compare/v1.3.2...v1.3.3) (2026-01-23)
+
+
+### Bug Fixes
+
+* update S3 bucket name and region in Terraform configuration ([c421629](https://github.com/duyluann/aws-agents-demo/commit/c421629457f3672eae332f786ee49996111bbec1))
+
 ## [1.3.2](https://github.com/duyluann/aws-agents-demo/compare/v1.3.1...v1.3.2) (2026-01-23)
 
 
