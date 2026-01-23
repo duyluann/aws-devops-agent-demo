@@ -12,7 +12,18 @@ echo "Environment: ${environment}"
 
 # Update system (don't fail if this has issues)
 yum update -y || echo "yum update had some issues, continuing..."
-yum install -y python3 python3-pip jq curl python3-boto3
+
+# Install Python packages including pip and setuptools
+yum install -y python3-pip python3 python3-setuptools jq curl
+
+# Install boto3 using pip with --user flag
+pip3 install boto3 --user
+
+# Verify boto3 is available
+python3 -c "import boto3; print('boto3 version:', boto3.__version__)" || {
+  echo "ERROR: boto3 installation failed"
+  exit 1
+}
 
 # Create application directory
 mkdir -p /opt/webapp
