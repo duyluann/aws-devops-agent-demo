@@ -388,7 +388,7 @@ class WebHandler(BaseHTTPRequestHandler):
                 showMessage(data.message, 'success');
 
                 if (type === 'crash') {{
-                    showMessage('Application will crash in 5 seconds!', 'error');
+                    showMessage('Application will crash in 5 minutes!', 'error');
                 }} else {{
                     setTimeout(refreshStatus, 1000);
                 }}
@@ -460,12 +460,12 @@ class WebHandler(BaseHTTPRequestHandler):
 
         elif self.path == '/simulate/crash':
             def delayed_crash():
-                time.sleep(5)
+                time.sleep(300)
                 print(f"[{datetime.now()}] Simulated crash - exiting")
                 os._exit(1)
             threading.Thread(target=delayed_crash, daemon=True).start()
             self.send_json_response(200, {
-                "message": "Application will crash in 5 seconds"
+                "message": "Application will crash in 5 minutes"
             })
 
         elif self.path == '/simulate/slow-health':
@@ -561,7 +561,7 @@ cat > /opt/webapp/trigger-crash.sh << 'EOF'
 #!/bin/bash
 curl -s http://localhost/simulate/crash
 echo ""
-echo "Application will crash in 5 seconds."
+echo "Application will crash in 5 minutes."
 EOF
 chmod +x /opt/webapp/trigger-crash.sh
 
