@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.3.5](https://github.com/duyluann/aws-agents-demo/compare/v1.3.4...v1.3.5) (2026-01-23)
+
+
+### Bug Fixes
+
+* update CloudWatch alarm periods to 10 seconds ([ea42b9d](https://github.com/duyluann/aws-agents-demo/commit/ea42b9d05cfebb16c777031e82f4a8b1b1a25a83))
+
 ## [1.3.4](https://github.com/duyluann/aws-agents-demo/compare/v1.3.3...v1.3.4) (2026-01-23)
 
 
