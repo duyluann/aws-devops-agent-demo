@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.5.3](https://github.com/duyluann/aws-agents-demo/compare/v1.5.2...v1.5.3) (2026-01-23)
+
+
+### Bug Fixes
+
+* **webhandler:** extend auto-recovery delay to 5 minutes for health check failures ([4d99d49](https://github.com/duyluann/aws-agents-demo/commit/4d99d498816c0db1130181a071671649bdda8ef3))
+
 ## [1.5.2](https://github.com/duyluann/aws-agents-demo/compare/v1.5.1...v1.5.2) (2026-01-23)
 
 
