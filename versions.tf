@@ -17,7 +17,7 @@ terraform {
     bucket         = "devops-agent-demo-316330059714-terraform-state"
     key            = "env/dev/terraform.tfstate"
     region         = "us-east-1"
-    dynamodb_table = "devops-demo-316330059714-terraform-state-lock"
+    dynamodb_table = "devops-agent-demo-316330059714-terraform-state-lock"
     encrypt        = true
   }
 }
