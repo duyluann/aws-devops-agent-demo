@@ -11,10 +11,10 @@ echo "Instance: ${instance_name}"
 echo "Environment: ${environment}"
 
 # Update system (don't fail if this has issues)
-yum update -y || echo "yum update had some issues, continuing..."
+sudo yum update -y || echo "yum update had some issues, continuing..."
 
 # Install Python packages including pip and setuptools
-yum install -y python3-pip python3 python3-setuptools jq curl
+sudo yum install -y python3-pip python3 python3-setuptools jq curl
 
 # Install boto3 using pip with --user flag
 pip3 install boto3 --user
