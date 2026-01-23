@@ -569,12 +569,12 @@ class WebHandler(BaseHTTPRequestHandler):
             health_status["healthy"] = False
             health_status["reason"] = "Simulated database connection failure"
             health_status["last_updated"] = datetime.now().isoformat()
-            schedule_auto_recovery(60)  # Auto-recover in 60 seconds
+            schedule_auto_recovery(300)  # Auto-recover in 300 seconds (5 minutes)
             publish_health_metric()
             publish_incident_metric('unhealthy')
             print(f"[{datetime.now()}] Simulated unhealthy state triggered")
             self.send_json_response(200, {
-                "message": "Health check will now fail (auto-recovery in 60s)",
+                "message": "Health check will now fail (auto-recovery in 5 minutes)",
                 "reason": health_status["reason"],
                 "auto_recovery": "enabled"
             })
@@ -605,12 +605,12 @@ class WebHandler(BaseHTTPRequestHandler):
             health_status["healthy"] = False
             health_status["reason"] = "Health check timeout simulation"
             health_status["last_updated"] = datetime.now().isoformat()
-            schedule_auto_recovery(90)  # Auto-recover in 90 seconds
+            schedule_auto_recovery(300)  # Auto-recover in 300 seconds (5 minutes)
             publish_health_metric()
             publish_incident_metric('slow-health')
             print(f"[{datetime.now()}] Simulated slow health check")
             self.send_json_response(200, {
-                "message": "Health checks will now be slow/timeout (auto-recovery in 90s)",
+                "message": "Health checks will now be slow/timeout (auto-recovery in 5 minutes)",
                 "auto_recovery": "enabled"
             })
 
