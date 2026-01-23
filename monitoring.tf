@@ -11,7 +11,7 @@ resource "aws_cloudwatch_metric_alarm" "unhealthy_hosts" {
   evaluation_periods  = 2
   metric_name         = "UnHealthyHostCount"
   namespace           = "AWS/ApplicationELB"
-  period              = 60
+  period              = 10
   statistic           = "Average"
   threshold           = 1
   treat_missing_data  = "notBreaching"
@@ -36,7 +36,7 @@ resource "aws_cloudwatch_metric_alarm" "high_response_time" {
   evaluation_periods  = 2
   metric_name         = "TargetResponseTime"
   namespace           = "AWS/ApplicationELB"
-  period              = 60
+  period              = 10
   statistic           = "Average"
   threshold           = 2
   treat_missing_data  = "notBreaching"
@@ -61,7 +61,7 @@ resource "aws_cloudwatch_metric_alarm" "http_5xx_errors" {
   evaluation_periods  = 2
   metric_name         = "HTTPCode_Target_5XX_Count"
   namespace           = "AWS/ApplicationELB"
-  period              = 60
+  period              = 10
   statistic           = "Sum"
   threshold           = 10
   treat_missing_data  = "notBreaching"
