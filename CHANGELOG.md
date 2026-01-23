@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file.
 
+# [1.5.0](https://github.com/duyluann/aws-agents-demo/compare/v1.4.0...v1.5.0) (2026-01-23)
+
+
+### Features
+
+* **userdata:** enhance boto3 installation and verification in UserData script ([819bf8d](https://github.com/duyluann/aws-agents-demo/commit/819bf8d890789e705d58078e0c4ca73526709ba5))
+
 # [1.4.0](https://github.com/duyluann/aws-agents-demo/compare/v1.3.6...v1.4.0) (2026-01-23)
 
 
