@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.3.1](https://github.com/duyluann/aws-agents-demo/compare/v1.3.0...v1.3.1) (2026-01-23)
+
+
+### Bug Fixes
+
+* use gzip compression for user_data to stay within 16KB limit ([124c53a](https://github.com/duyluann/aws-agents-demo/commit/124c53ae0b78ce9ee7a6c2634a3721d9d96be038)), closes [#6](https://github.com/duyluann/aws-agents-demo/issues/6)
+
 # [1.3.0](https://github.com/duyluann/aws-agents-demo/compare/v1.2.0...v1.3.0) (2026-01-23)
 
 
