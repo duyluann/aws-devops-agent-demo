@@ -84,6 +84,7 @@ No modules.
 | <a name="output_alb_url"></a> [alb\_url](#output\_alb\_url) | URL to access the application |
 | <a name="output_auto_shutdown_enabled"></a> [auto\_shutdown\_enabled](#output\_auto\_shutdown\_enabled) | Whether auto-shutdown is enabled |
 | <a name="output_auto_shutdown_lambda_arn"></a> [auto\_shutdown\_lambda\_arn](#output\_auto\_shutdown\_lambda\_arn) | ARN of the auto-shutdown Lambda function (if enabled) |
+| <a name="output_cloudwatch_alarm_names"></a> [cloudwatch\_alarm\_names](#output\_cloudwatch\_alarm\_names) | Map of alarm types to alarm names for incident testing |
 | <a name="output_cloudwatch_alarms"></a> [cloudwatch\_alarms](#output\_cloudwatch\_alarms) | Names of CloudWatch alarms (if monitoring enabled) |
 | <a name="output_environment"></a> [environment](#output\_environment) | The environment name |
 | <a name="output_environment_tag"></a> [environment\_tag](#output\_environment\_tag) | Tag value to use in DevOps Agent Space for resource discovery |

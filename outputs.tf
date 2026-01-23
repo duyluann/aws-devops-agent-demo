@@ -69,6 +69,15 @@ output "cloudwatch_alarms" {
   ] : []
 }
 
+output "cloudwatch_alarm_names" {
+  description = "Map of alarm types to alarm names for incident testing"
+  value = var.enable_monitoring ? {
+    unhealthy_hosts    = aws_cloudwatch_metric_alarm.unhealthy_hosts[0].alarm_name
+    high_response_time = aws_cloudwatch_metric_alarm.high_response_time[0].alarm_name
+    http_5xx_errors    = aws_cloudwatch_metric_alarm.http_5xx_errors[0].alarm_name
+  } : {}
+}
+
 # Demo helper commands
 output "trigger_failure_command" {
   description = "Command to trigger health check failure (run via SSM or SSH)"
