@@ -32,7 +32,7 @@ resource "aws_lb_target_group" "main" {
 
   health_check {
     enabled             = true
-    interval            = 30
+    interval            = 5
     path                = "/health"
     protocol            = "HTTP"
     timeout             = 10
