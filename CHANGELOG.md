@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.5.4](https://github.com/duyluann/aws-devops-agent-demo/compare/v1.5.3...v1.5.4) (2026-01-24)
+
+
+### Bug Fixes
+
+* **alb:** reduce health check interval from 30 to 5 seconds ([4cb116c](https://github.com/duyluann/aws-devops-agent-demo/commit/4cb116c76b86cdb0111658e5b59bd050d444fa44))
+
 ## [1.5.3](https://github.com/duyluann/aws-agents-demo/compare/v1.5.2...v1.5.3) (2026-01-23)
 
 
