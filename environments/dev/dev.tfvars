@@ -20,5 +20,5 @@ key_pair_name     = ""
 # Monitoring - enabled to test alarms
 enable_monitoring = true
 
-# Auto-shutdown - enabled to save costs (stops instances every 2 hours)
-enable_auto_shutdown = true
+# Auto-shutdown - disabled to keep instances running
+enable_auto_shutdown = false
