@@ -4,7 +4,11 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Repository Overview
 
-This is a Terraform project template designed for AWS infrastructure deployments with comprehensive CI/CD integration, security scanning, and best practices enforcement.
+This is the **AWS DevOps Agent Demo** - a production-ready AWS infrastructure platform designed for testing and validating DevOps AI agents' incident response capabilities. It features Python-based web applications with incident simulation endpoints, fast CloudWatch alarms (10-second periods), automated recovery mechanisms, and comprehensive monitoring.
+
+**For complete demo documentation, architecture diagrams, and agent integration guides, see [README.md](README.md).**
+
+This file focuses on development workflows, CI/CD guidelines, and Terraform best practices for contributing to this repository.
 
 ## Key Commands
 
